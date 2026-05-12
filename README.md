@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Space Game FINAL</title>
+<title>Space Game FINAL SAVE</title>
 
 <style>
 body{
@@ -84,6 +84,11 @@ button{
 <!-- SHOP -->
 <div id="shop" class="screen" style="display:none;">
     <h2>🛒 SHOP</h2>
+
+    <div style="margin-bottom:10px;font-size:14px;">
+        💰 MONEY: $<span id="shopMoney">0</span>
+    </div>
+
     <div id="shopItems"></div>
     <button onclick="backMenu()">BACK</button>
 </div>
@@ -98,14 +103,14 @@ button{
 <!-- GAME OVER -->
 <div id="gameOver" class="screen" style="display:none;">
     <h1>GAME OVER</h1>
-    <button onclick="location.reload()">RESTART</button>
+    <button onclick="resetGame()">RESTART</button>
 </div>
 
 <!-- UI -->
 <div id="ui">
 💰 <span id="money">0</span> |
 🏆 <span id="score">0</span> |
-❤️ <span id="hp">100</span>
+❤️ <span id="hpText">100</span>
 </div>
 
 <canvas id="game"></canvas>
@@ -118,6 +123,9 @@ const ctx=canvas.getContext("2d");
 canvas.width=900;
 canvas.height=500;
 
+// ================= SAVE SYSTEM =================
+let money = parseInt(localStorage.getItem("money")) || 0;
+
 // STATE
 let running=false;
 
@@ -126,9 +134,7 @@ let player={x:450,y:420,targetX:450,hp:100};
 let bullets=[];
 let rocks=[];
 let enemies=[];
-let particles=[];
 
-let money=0;
 let score=0;
 let selectedLevel=0;
 
@@ -184,12 +190,18 @@ function backMenu(){
     document.getElementById("menu").style.display="flex";
 }
 
+function resetGame(){
+    location.reload();
+}
+
 function hideAll(){
     document.querySelectorAll(".screen").forEach(s=>s.style.display="none");
 }
 
 // ================= SHOP =================
 function renderShop(){
+
+    document.getElementById("shopMoney").innerText=money;
 
     let box=document.getElementById("shopItems");
     box.innerHTML="";
@@ -216,6 +228,7 @@ function renderShop(){
             if(owned[i]) ship=i;
             else if(money>=s.price){
                 money-=s.price;
+                localStorage.setItem("money",money); // 💾 SAVE
                 owned[i]=true;
                 ship=i;
                 updateUI();
@@ -277,16 +290,6 @@ setInterval(()=>{
     });
 },500);
 
-setInterval(()=>{
-    if(!running) return;
-
-    enemies.push({
-        x:Math.random()*850,
-        y:-50,
-        speed:1.5
-    });
-},2500);
-
 // ================= UPDATE =================
 function update(){
 
@@ -315,25 +318,9 @@ function update(){
                 rocks.splice(ri,1);
                 bullets.splice(bi,1);
                 money+=5;
+
+                localStorage.setItem("money",money); // 💾 SAVE
                 score+=10;
-                updateUI();
-            }
-        });
-    });
-
-    enemies.forEach((e,ei)=>{
-        e.y+=e.speed;
-
-        if(e.y>500){
-            player.hp-=20;
-            enemies.splice(ei,1);
-        }
-
-        bullets.forEach((b,bi)=>{
-            if(Math.abs(b.x-e.x)<20 && Math.abs(b.y-e.y)<20){
-                enemies.splice(ei,1);
-                bullets.splice(bi,1);
-                score+=25;
                 updateUI();
             }
         });
@@ -345,10 +332,10 @@ function update(){
     }
 }
 
-// ================= DRAW (ORIGINAL BACKGROUND) =================
+// ================= DRAW =================
 function draw(){
 
-    // 🌌 ORIGINAL BACKGROUND (as before)
+    // BACKGROUND (ORIGINAL)
     let g=ctx.createRadialGradient(450,250,50,450,250,600);
     g.addColorStop(0,"#0a0a2a");
     g.addColorStop(1,"#000");
@@ -356,7 +343,7 @@ function draw(){
     ctx.fillStyle=g;
     ctx.fillRect(0,0,900,500);
 
-    // ⭐ simple stars (clean)
+    // STARS
     for(let i=0;i<70;i++){
         let x=(i*120)%900;
         let y=(i*70)%500;
@@ -364,7 +351,7 @@ function draw(){
         ctx.fillRect(x,y,2,2);
     }
 
-    // PLAYER
+    // SHIP
     ctx.fillStyle=ships[ship].color;
     ctx.beginPath();
     ctx.moveTo(player.x,player.y-18);
@@ -379,32 +366,28 @@ function draw(){
         ctx.fillRect(b.x,b.y,3,10);
     });
 
-    // ROCKS (FIXED VISIBILITY 🔥)
+    // ROCKS (VISIBLE FIX)
+    ctx.fillStyle="#bbbbbb";
     rocks.forEach(r=>{
-        ctx.fillStyle="#bbbbbb";
         ctx.beginPath();
         ctx.arc(r.x,r.y,r.size,0,Math.PI*2);
         ctx.fill();
     });
 
-    // ENEMIES
-    enemies.forEach(e=>{
-        ctx.fillStyle="red";
-        ctx.beginPath();
-        ctx.arc(e.x,e.y,12,0,Math.PI*2);
-        ctx.fill();
-    });
-
-    // HP BAR
+    // HP BAR + NUMBER ❤️
     ctx.fillStyle="red";
     ctx.fillRect(10,460,player.hp*2,10);
+
+    ctx.fillStyle="white";
+    ctx.font="14px Arial";
+    ctx.fillText("HP: "+player.hp,10,455);
 }
 
 // ================= UI =================
 function updateUI(){
     document.getElementById("money").innerText=money;
     document.getElementById("score").innerText=score;
-    document.getElementById("hp").innerText=player.hp;
+    document.getElementById("hpText").innerText=player.hp;
 }
 
 // ================= LOOP =================
@@ -418,4 +401,4 @@ loop();
 </script>
 
 </body>
-</html>
+</html> 
